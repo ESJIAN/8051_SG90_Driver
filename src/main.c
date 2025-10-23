@@ -1,3 +1,26 @@
+/**
+ * @file        main.c
+ * @brief       8051单片机SG90舵机驱动程序主文件
+ * @description 使用定时器0中断实现PWM波形输出，控制SG90舵机位置
+ *              支持按键控制舵机角度调节，PWM频率约46Hz，占空比可调
+ * @author      ESJIAN
+ * @version     v1.0
+ * @date        2025-10-23
+ * @copyright   Copyright (c) 2025 STALAB
+ * 
+ * @note        硬件配置:
+ *              - 晶振频率: 11.0592MHz
+ *              - PWM输出引脚: P1.0
+ *              - 定时器: Timer0 (模式2, 8位自动重装)
+ *              - 中断周期: 约217μs
+ *              - PWM周期: 约21.7ms (46Hz)
+ *              - 占空比范围: 0-100 (对应0-2.3ms高电平)
+ *              - 精度: 1% (约217μs)
+ * 
+ * @changelog   
+ *              v1.0 - 2025-10-23 - 初始版本，实现基本PWM输出功能
+ */
+
 #include <STC89C5xRC.H>
 #include "Int_Key.h"
 
@@ -21,7 +44,7 @@ unsigned char press_key = 0;
  * @return none
  * @note 使用定时器0，模式2(8位自动重装)，产生固定时间间隔中断
  */
-void  光辉Timer0_Init(void)
+void  Timer0_Init(void)
 {
     // 设置定时器0为模式2(8位自动重装)
     TMOD &= 0xF0;   // 清除定时器0模式位
@@ -29,9 +52,9 @@ void  光辉Timer0_Init(void)
     
     // 计算定时器初值 - 假设晶振为11.0592MHz
     // 定时时间 = (256 - TH0) × 12 / 11.0592 MHz
-    // 设置为约2us中断一次 
-    TH0 = 256 - 2; // 定时器重装值
-    TL0 = 256 - 2; // 定时器初始值
+    // 设置为约217us中断一次 
+    TH0 = 256 - 200; // 定时器重装值
+    TL0 = 256 - 200; // 定时器初始值
     
     // 开启定时器0中断
     ET0 = 1;
@@ -113,7 +136,7 @@ void main(void)
             if (Int_Key_IsSW1Pressed())
             {
                 // 逐渐变亮
-                for(i = 0; i <= 8; i++)
+                for(i = 0; i <= 5; i++)
                 {
                     Set_PWM_Duty(i);
                     Delay_ms(60);
@@ -123,7 +146,7 @@ void main(void)
             else if (Int_Key_IsSW2Pressed())
             {   
                 // 逐渐变暗
-                for(i = 8; i > 0; i--)
+                for(i = 5; i > 1; i--)
                 {
                     Set_PWM_Duty(i);
                     Delay_ms(60);
